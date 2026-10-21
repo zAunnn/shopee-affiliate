@@ -10,7 +10,7 @@ PAGE_TOKEN = os.environ.get("FACEBOOK_PAGE_ACCESS_TOKEN")
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
 
 # 2. อ่านข้อมูลจาก Google Sheets (ใช้ลิงก์ CSV เดิมของคุณ)
-CSV_URL = "docs.google.com/spreadsheets/d/e/2PACX-1vRAzqsnuQBZ68r46Occb7QR3gPdd9E99BLJXH2FeyWuSzUQokUHxRIB6LIiMfGYGxTrO0MfxAlMkBSI/pub?gid=1694411054&single=true&output=csv"  # ถ้าในโค้ดเดิมมีอยู่แล้ว ใช้ของเดิมได้เลยครับ
+CSV_URL = "docs.google.com/spreadsheets/d/e/2PACX-1vRAzqsnuQBZ68r46Occb7QR3gPdd9E99BLJXH2FeyWuSzUQokUHxRIB6LIiMfGYGxTrO0MfxAlMkBSI/pub?gid=1694411054&single=true&output=csv"
 
 try:
     df = pd.read_csv(CSV_URL)
