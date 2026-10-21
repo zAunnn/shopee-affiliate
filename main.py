@@ -1,84 +1,52 @@
 import os
-import json
 import random
-import requests
 import pandas as pd
+import requests
 from google import genai
 
-# 1. ตั้งค่า Gemini Client
-client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+# 1. โหลด Environment Variables ให้ตรงกับ GitHub Actions
+PAGE_ID = os.environ.get("FACEBOOK_PAGE_ID")
+PAGE_TOKEN = os.environ.get("FACEBOOK_PAGE_ACCESS_TOKEN")
+GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
 
-# 2. ใส่ URL CSV ที่ได้จาก Publish to web ของ Google Sheets
-GOOGLE_SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRAzqsnuQBZ68r46Occb7QR3gPdd9E99BLJXH2FeyWuSzUQokUHxRIB6LIiMfGYGxTrO0MfxAlMkBSI/pub?gid=1694411054&single=true&output=csv"
+# 2. อ่านข้อมูลจาก Google Sheets (ใช้ลิงก์ CSV เดิมของคุณ)
+CSV_URL = "docs.google.com/spreadsheets/d/e/2PACX-1vRAzqsnuQBZ68r46Occb7QR3gPdd9E99BLJXH2FeyWuSzUQokUHxRIB6LIiMfGYGxTrO0MfxAlMkBSI/pub?gid=1694411054&single=true&output=csv"  # ถ้าในโค้ดเดิมมีอยู่แล้ว ใช้ของเดิมได้เลยครับ
 
-# 3. อ่านข้อมูลสินค้าจาก Google Sheets
-df = pd.read_csv(GOOGLE_SHEET_CSV_URL)
+try:
+    df = pd.read_csv(CSV_URL)
+    selected = df.sample(1).iloc[0]
+    product_name = str(selected.get("Product_Name", "สินค้าแนะนำ"))
+    shopee_link = str(selected.get("Affiliate_Link", "https://shopee.co.th"))
+    print(f"สุ่มได้สินค้า: {product_name}")
+except Exception as e:
+    print(f"Error reading CSV: {e}")
+    exit(1)
 
-# ตัดช่องว่างข้างหน้า/ข้างหลังของชื่อคอลัมน์ทั้งหมดออกเพื่อความชัวร์
-df.columns = df.columns.str.strip()
+# 3. สร้างแคปชัน (มีระบบสำรองอัตโนมัติ ป้องกัน Error 429 ของ Gemini)
+post_text = None
+if GEMINI_KEY:
+    try:
+        client = genai.Client(api_key=GEMINI_KEY)
+        prompt = f"เขียนแคปชันโพสต์ Facebook ขายสินค้า Affiliate สำหรับสินค้า: {product_name} พร้อมลิงก์พิกัด: {shopee_link} ใส่ hashtag และอีโมจิดึงดูดน่าซื้อ"
+        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+        post_text = response.text
+    except Exception as e:
+        print(f"Gemini API ใช้งานไม่ได้ชั่วคราว (Quota เต็ม): {e} -> ใช้ข้อความสำรองแทน")
 
-# แปลงเป็น List of Dicts
-products = df.to_dict(orient='records')
+# ถ้า Gemini พังหรือโควตาหมด ให้ใช้ข้อความนี้แทนทันที บอทจะได้ไม่หยุดทำงาน
+if not post_text:
+    post_text = f"🔥 ป้ายยาแรง! {product_name}\n\n🛒 พิกัดสั่งซื้อ: {shopee_link}\n\n#Shopee #Affiliate #ของดีบอกต่อ"
 
-# 4. โหลดประวัติการโพสต์จาก history.json
-history_file = 'history.json'
-posted_products = []
-if os.path.exists(history_file):
-    with open(history_file, 'r', encoding='utf-8') as f:
-        try:
-            posted_products = json.load(f)
-        except:
-            posted_products = []
-
-# 5. กรองสินค้าที่ยังไม่เคยโพสต์ (เทียบจาก Product_Name หรือคอลัมน์ที่ 2)
-available_products = []
-for p in products:
-    p_name = str(p.get("Product_Name", list(p.values())[1])).strip()
-    if p_name not in posted_products:
-        available_products.append(p)
-
-if not available_products:
-    posted_products = []
-    available_products = products
-
-# 6. สุ่มเลือกสินค้า 1 รายการ
-selected = random.choice(available_products)
-
-# ดึงค่าตามชื่อ หรือดึงตามตำแหน่งคอลัมน์หากหาชื่อไม่เจอ
-keys = list(selected.keys())
-product_name = selected.get("Product_Name", selected[keys[1]])
-shopee_link = selected.get("Affiliate_Link", selected[keys[2]])
-image_field = str(selected.get("Image_File", selected[keys[3]]))
-
-# สกัดเอา File ID ของ Google Drive ออกมา
-drive_file_id = image_field.split("id=")[-1]
-image_url = f"https://lh3.googleusercontent.com/d/{drive_file_id}"
-
-print(f"สุ่มได้สินค้า: {product_name}")
-
-# 7. สร้างแคปชันด้วย Gemini
-prompt = f"เขียนแคปชันโพสต์ Facebook ขายสินค้า Affiliate ช้อปปี้ สำหรับสินค้า: {product_name} พร้อมลิงก์พิกัด: {shopee_link} ใส่ hastag ที่เกี่ยวข้อง และอีโมจิให้ดึงดูด น่าซื้อ"
-response = client.models.generate_content(model='gemini-3.8-flash', contents=prompt)
-post_text = response.text
-
-# 8. โพสต์ลง Facebook Page
-PAGE_ID = os.environ["FACEBOOK_PAGE_ID"]
-FB_PAGE_ACCESS_TOKEN = os.environ["FB_PAGE_ACCESS_TOKEN"]
-
-url = f"https://graph.facebook.com/v21.0/{PAGE_ID}/photos"
+# 4. โพสต์ลง Facebook Page
+url = f"https://graph.facebook.com/v18.0/{PAGE_ID}/feed"
 payload = {
-    'url': image_url,
-    'message': post_text,
-    'access_token': FB_PAGE_ACCESS_TOKEN
+    "message": post_text,
+    "access_token": PAGE_TOKEN
 }
 
-fb_response = requests.post(url, data=payload)
-if fb_response.status_code != 200:
-    raise Exception(f"โพสต์ไม่สำเร็จ: {fb_response.text}")
-
-print("โพสต์สำเร็จเรียบร้อย!")
-
-# 9. บันทึกประวัติ
-posted_products.append(str(product_name))
-with open(history_file, 'w', encoding='utf-8') as f:
-    json.dump(posted_products, f, ensure_ascii=False, indent=4)
+response = requests.post(url, data=payload)
+if response.status_code == 200:
+    print("โพสต์ลง Facebook สำเร็จเรียบร้อย!")
+else:
+    print(f"Facebook API Error: {response.text}")
+    exit(1)
