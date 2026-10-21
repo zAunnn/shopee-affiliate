@@ -9,19 +9,19 @@ PAGE_ID = os.environ.get("FACEBOOK_PAGE_ID")
 PAGE_TOKEN = os.environ.get("FACEBOOK_PAGE_ACCESS_TOKEN")
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
 
-# 2. อ่านข้อมูลจาก Google Sheets (ใช้ลิงก์ CSV เดิมของคุณ)
-CSV_URL = "docs.google.com/spreadsheets/d/e/2PACX-1vRAzqsnuQBZ68r46Occb7QR3gPdd9E99BLJXH2FeyWuSzUQokUHxRIB6LIiMfGYGxTrO0MfxAlMkBSI/pub?gid=1694411054&single=true&output=csv"
+# 2. อ่านข้อมูลจาก Google Sheets
+CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRAzqsnuQBZ68r46Occb7QR3gPdd9E99BLJXH2FeyWuSzUQokUHxRIB6LIiMfGYGxTrO0MfxAlMkBSI/pub?gid=1694411054&single=true&output=csv"
 
 try:
-    df = pd.read_csv(CSV_URL)
-    selected = df.sample(1).iloc[0]
-    product_name = str(selected.get("Product_Name", "สินค้าแนะนำ"))
-    shopee_link = str(selected.get("Affiliate_Link", "https://shopee.co.th"))
-    print(f"สุ่มได้สินค้า: {product_name}")
+    df = pd.read_csv(CSV_URL)
+    selected = df.sample(1).iloc[0]
+    product_name = str(selected.get("Product_Name", "สินค้าแนะนำ"))
+    shopee_link = str(selected.get("Affiliate_Link", "https://shopee.co.th"))
+    print(f"สุ่มได้สินค้า: {product_name}")
 except Exception as e:
-    print(f"Error reading CSV: {e}")
-    exit(1)
-
+    print(f"Error reading CSV: {e}")
+    exit(1)
+  
 # 3. สร้างแคปชัน (มีระบบสำรองอัตโนมัติ ป้องกัน Error 429 ของ Gemini)
 post_text = None
 if GEMINI_KEY:
