@@ -1,20 +1,23 @@
 import os
-import csv
-import random
 import requests
-from google import genai
 
-# 1. ดึงค่า Secrets
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
-PAGE_ID = os.environ.get("FACEBOOK_PAGE_ID")
-PAGE_ACCESS_TOKEN = os.environ.get("FACEBOOK_PAGE_ACCESS_TOKEN")
+# 1. ดาวน์โหลดรูปภาพจากเครื่อง GitHub Runner (เพราะรูปอยู่ในRepoอยู่แล้ว)
+image_filename = product['Image_Url'].split('/')[-1] # ดึงชื่อไฟล์ เช่น tissue-paper.jpg
 
-# 2. อ่านข้อมูลสินค้าจากไฟล์ products.csv
-products = []
-with open("products.csv", mode="r", encoding="utf-8") as file:
-    reader = csv.DictReader(file)
-    for row in reader:
-        products.append(row)
+if os.path.exists(image_filename):
+    # 2. ส่งไฟล์รูปภาพตรงๆ ไปยัง Facebook Graph API Endpoint /photos
+    url = f"https://graph.facebook.com/v21.0/{PAGE_ID}/photos"
+    
+    payload = {
+        'caption': post_text, # หรือ 'message'
+        'access_token': FB_PAGE_ACCESS_TOKEN
+    }
+    
+    with open(image_filename, 'rb') as img_file:
+        files = {
+            'source': img_file
+        }
+        response = requests.post(url, data=payload, files=files)
 
 # 3. สุ่มเลือกสินค้า 1 ชิ้นจากตาราง
 selected_product = random.choice(products)
