@@ -57,12 +57,9 @@ image_url = f"https://lh3.googleusercontent.com/d/{drive_file_id}"
 print(f"สุ่มได้สินค้า: {product_name}")
 
 # 7. สร้างแคปชันด้วย Gemini
-#prompt = f"เขียนแคปชันโพสต์ Facebook ขายสินค้า Affiliate ช้อปปี้ สำหรับสินค้า: {product_name} พร้อมลิงก์พิกัด: {shopee_link} ใส่ hastag ที่เกี่ยวข้อง และอีโมจิให้ดึงดูด น่าซื้อ"
+prompt = f"เขียนแคปชันโพสต์ Facebook ขายสินค้า Affiliate ช้อปปี้ สำหรับสินค้า: {product_name} พร้อมลิงก์พิกัด: {shopee_link} ใส่ hastag ที่เกี่ยวข้อง และอีโมจิให้ดึงดูด น่าซื้อ"
 response = client.models.generate_content(model='gemini-3.8-flash', contents=prompt)
-post_text = response.text #
-
-# 7. ใช้ข้อความธรรมดาเทสระบบไปก่อน
-post_text = f"🔥 แนะนำสินค้าเด็ดน่าซื้อ! {product_name}\n\nพิกัดสั่งซื้อ: {shopee_link}\n\n#Shopee #Affiliate #ป้ายยา"
+post_text = response.text
 
 # 8. โพสต์ลง Facebook Page
 PAGE_ID = os.environ["FACEBOOK_PAGE_ID"]
