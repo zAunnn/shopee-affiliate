@@ -62,7 +62,7 @@ response = client.models.generate_content(model='gemini-3.8-flash', contents=pro
 post_text = response.text
 
 # 8. โพสต์ลง Facebook Page
-PAGE_ID = os.environ["FB_PAGE_ID"]
+PAGE_ID = os.environ["FACEBOOK_PAGE_ID"]
 FB_PAGE_ACCESS_TOKEN = os.environ["FB_PAGE_ACCESS_TOKEN"]
 
 url = f"https://graph.facebook.com/v21.0/{PAGE_ID}/photos"
