@@ -36,21 +36,26 @@ print(post_text)
 # 4. ดึงชื่อไฟล์รูปภาพจาก URL (เช่น shoes-xtep.jpg)
 image_filename = image_url.split('/')[-1]
 
-# 5. ส่งรูปภาพและแคปชันตรงๆ ไปยัง Facebook Graph API
+# 5. ส่งรูปภาพและแคปชันไปยัง Facebook Graph API
 PAGE_ID = os.environ["FB_PAGE_ID"]
 FB_PAGE_ACCESS_TOKEN = os.environ["FB_PAGE_ACCESS_TOKEN"]
 
 if os.path.exists(image_filename):
     url = f"https://graph.facebook.com/v21.0/{PAGE_ID}/photos"
+    
     payload = {
         'caption': post_text,
+        'published': 'true',
         'access_token': FB_PAGE_ACCESS_TOKEN
     }
+    
+    # เปิดอ่านไฟล์รูปภาพแบบ Binary (rb)
     with open(image_filename, 'rb') as img_file:
         files = {
-            'source': img_file
+            'source': (image_filename, img_file, 'image/jpeg')
         }
         fb_response = requests.post(url, data=payload, files=files)
+        
         print("=== Facebook API Response ===")
         print(fb_response.text)
         
