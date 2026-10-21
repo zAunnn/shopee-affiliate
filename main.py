@@ -1,72 +1,62 @@
 import os
+import csv
+import random
 import requests
+from google import genai
 
-# 1. ดาวน์โหลดรูปภาพจากเครื่อง GitHub Runner (เพราะรูปอยู่ในRepoอยู่แล้ว)
-image_filename = product['Image_Url'].split('/')[-1] # ดึงชื่อไฟล์ เช่น tissue-paper.jpg
+# ตั้งค่า Client ของ Gemini
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+
+# 1. อ่านข้อมูลสินค้าจาก products.csv
+products = []
+with open('products.csv', mode='r', encoding='utf-8') as file:
+    reader = csv.DictReader(file)
+    for row in reader:
+        products.append(row)
+
+# 2. สุ่มเลือกสินค้า 1 ชิ้นจากตาราง
+selected_product = random.choice(products)
+product_name = selected_product["Product_Name"]
+shopee_link = selected_product["Affiliate_Link"]
+image_url = selected_product["Image_Url"]
+
+print(f"สุ่มได้สินค้า: {product_name}")
+
+# 3. ให้ Gemini สร้างแคปชัน
+prompt = f"เขียนแคปชันโพสต์ Facebook ขายสินค้า Affiliate ช้อปปี้ สำหรับสินค้า: {product_name} พร้อมลิงก์พิกัด: {shopee_link} ใส่ hastag ที่เกี่ยวข้อง และอีโมจิให้ดึงดูด น่าซื้อ"
+
+response = client.models.generate_content(
+    model='gemini-3.8-flash',
+    contents=prompt
+)
+post_text = response.text
+print("=== Generated Post Content ===")
+print(post_text)
+
+# 4. ดึงชื่อไฟล์รูปภาพจาก URL (เช่น shoes-xtep.jpg)
+image_filename = image_url.split('/')[-1]
+
+# 5. ส่งรูปภาพและแคปชันตรงๆ ไปยัง Facebook Graph API
+PAGE_ID = os.environ["FB_PAGE_ID"]
+FB_PAGE_ACCESS_TOKEN = os.environ["FB_PAGE_ACCESS_TOKEN"]
 
 if os.path.exists(image_filename):
-    # 2. ส่งไฟล์รูปภาพตรงๆ ไปยัง Facebook Graph API Endpoint /photos
     url = f"https://graph.facebook.com/v21.0/{PAGE_ID}/photos"
-    
     payload = {
-        'caption': post_text, # หรือ 'message'
+        'caption': post_text,
         'access_token': FB_PAGE_ACCESS_TOKEN
     }
-    
     with open(image_filename, 'rb') as img_file:
         files = {
             'source': img_file
         }
-        response = requests.post(url, data=payload, files=files)
-
-# 3. สุ่มเลือกสินค้า 1 ชิ้นจากตาราง
-selected_product = random.choice(products)
-product_name = selected_product["Product_Name"]
-shopee_link = selected_product["Affiliate_Link"]
-image_url = selected_product["Image_Url"]  # <--- เพิ่มบรรทัดนี้ดึงลิงก์รูปภาพจาก CSV
-
-print(f"สุ่มได้สินค้า: {product_name}")
-
-# 4. กำหนด Prompt ให้ Gemini เขียนแคปชั่นตามชื่อสินค้า
-prompt = f"""
-เขียนแคปชั่นขายสินค้าสำหรับโพสต์ Facebook Page สั้นๆ น่ารัก ชวนซื้อ
-สินค้าคือ: {product_name}
-
-โดยให้ใช้โครงสร้างการเว้นบรรทัดดังนี้:
-[หัวข้อดึงดูดสายตาพร้อม Emoji]
-
-[เนื้อหาจุดเด่นสินค้า 2-3 บรรทัด สั้นกระชับ]
-
-🛒 พิกัดช้อปตรงนี้เลย👇
-{shopee_link}
-
-ใส่ Hashtag ที่เกี่ยวข้อง
-
-(คำตอบต้องมีเฉพาะเนื้อหาที่จะโพสต์จริงเท่านั้น ห้ามมีคำนำ ตัวเลือก หรือคำเกริ่นใดๆ)
-"""
-# 5. เรียกใช้งาน Gemini API
-client = genai.Client(api_key=GEMINI_API_KEY)
-response = client.models.generate_content(
-    model="gemini-3.8-flash",
-    contents=prompt,
-)
-
-post_content = response.text.strip()
-print("=== Generated Post Content ===")
-print(post_content)
-
-# 6. โพสต์รูปภาพพร้อมแคปชั่นลง Facebook Page
-url = f"https://graph.facebook.com/v20.0/{PAGE_ID}/photos"
-payload = {
-    "caption": post_content,      # เปลี่ยนจาก message เป็น caption
-    "url": image_url,             # ใส่ลิงก์รูปภาพสินค้า
-    "access_token": PAGE_ACCESS_TOKEN
-}
-fb_response = requests.post(url, data=payload)
-print("=== Facebook API Response ===")
-print(fb_response.json())
-
-if fb_response.status_code == 200:
-    print("โพสต์ลง Facebook สำเร็จแล้ว!")
+        fb_response = requests.post(url, data=payload, files=files)
+        print("=== Facebook API Response ===")
+        print(fb_response.text)
+        
+        if fb_response.status_code != 200:
+            raise Exception(f"โพสต์ไม่สำเร็จ: {fb_response.text}")
+        else:
+            print("โพสต์สำเร็จเรียบร้อย!")
 else:
-    raise Exception(f"โพสต์ไม่สำเร็จ: {fb_response.text}")
+    raise Exception(f"ไม่พบไฟล์รูปภาพ: {image_filename}")
