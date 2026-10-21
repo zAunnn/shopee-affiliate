@@ -44,7 +44,7 @@ prompt = f"""
 # 5. เรียกใช้งาน Gemini API
 client = genai.Client(api_key=GEMINI_API_KEY)
 response = client.models.generate_content(
-    model="gemini-1.5-flash",
+    model="gemini-2.0-flash",
     contents=prompt,
 )
 
