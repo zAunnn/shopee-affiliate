@@ -1,10 +1,9 @@
 import os
-import random
 import pandas as pd
 import requests
 from google import genai
 
-# 1. โหลด Environment Variables ให้ตรงกับ GitHub Actions
+# 1. โหลด Environment Variables
 PAGE_ID = os.environ.get("FACEBOOK_PAGE_ID")
 PAGE_TOKEN = os.environ.get("FACEBOOK_PAGE_ACCESS_TOKEN")
 GEMINI_KEY = os.environ.get("GEMINI_API_KEY")
@@ -21,32 +20,31 @@ try:
 except Exception as e:
     print(f"Error reading CSV: {e}")
     exit(1)
-  
-# 3. สร้างแคปชัน (มีระบบสำรองอัตโนมัติ ป้องกัน Error 429 ของ Gemini)
+
+# 3. สร้างแคปชัน
 post_text = None
 if GEMINI_KEY:
-    try:
-        client = genai.Client(api_key=GEMINI_KEY)
-        prompt = f"เขียนแคปชันโพสต์ Facebook ขายสินค้า Affiliate สำหรับสินค้า: {product_name} พร้อมลิงก์พิกัด: {shopee_link} ใส่ hashtag และอีโมจิดึงดูดน่าซื้อ"
-        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
-        post_text = response.text
-    except Exception as e:
-        print(f"Gemini API ใช้งานไม่ได้ชั่วคราว (Quota เต็ม): {e} -> ใช้ข้อความสำรองแทน")
+    try:
+        client = genai.Client(api_key=GEMINI_KEY)
+        prompt = f"เขียนแคปชันโพสต์ Facebook ขายสินค้า Affiliate สำหรับสินค้า: {product_name} พร้อมลิงก์พิกัด: {shopee_link} ใส่ hashtag และอีโมจิดึงดูดน่าซื้อ"
+        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+        post_text = response.text
+    except Exception as e:
+        print(f"Gemini API ใช้งานไม่ได้ชั่วคราว: {e} -> ใช้ข้อความสำรองแทน")
 
-# ถ้า Gemini พังหรือโควตาหมด ให้ใช้ข้อความนี้แทนทันที บอทจะได้ไม่หยุดทำงาน
 if not post_text:
-    post_text = f"🔥 ป้ายยาแรง! {product_name}\n\n🛒 พิกัดสั่งซื้อ: {shopee_link}\n\n#Shopee #Affiliate #ของดีบอกต่อ"
+    post_text = f"🔥 ป้ายยาแรง! {product_name}\n\n🛒 พิกัดสั่งซื้อ: {shopee_link}\n\n#Shopee #Affiliate #ของดีบอกต่อ"
 
 # 4. โพสต์ลง Facebook Page
 url = f"https://graph.facebook.com/v18.0/{PAGE_ID}/feed"
 payload = {
-    "message": post_text,
-    "access_token": PAGE_TOKEN
+    "message": post_text,
+    "access_token": PAGE_TOKEN
 }
 
 response = requests.post(url, data=payload)
 if response.status_code == 200:
-    print("โพสต์ลง Facebook สำเร็จเรียบร้อย!")
+    print("โพสต์ลง Facebook สำเร็จเรียบร้อย!")
 else:
-    print(f"Facebook API Error: {response.text}")
-    exit(1)
+    print(f"Facebook API Error: {response.text}")
+    exit(1)
