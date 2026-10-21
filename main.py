@@ -42,7 +42,7 @@ if GEMINI_KEY:
     try:
         client = genai.Client(api_key=GEMINI_KEY)
         prompt = f"เขียนแคปชันโพสต์ Facebook ขายสินค้า Affiliate สำหรับสินค้า: {product_name} พร้อมลิงก์พิกัด: {shopee_link} ใส่ hashtag และอีโมจิดึงดูดน่าซื้อ"
-        response = client.models.generate_content(model='gemini-2.5-flash', contents=prompt)
+        response = client.models.generate_content(model='gemini-3.8-flash', contents=prompt)
         post_text = response.text
     except Exception as e:
         print(f"Gemini API แจ้งเตือน: {e} -> ใช้ข้อความสำรองแทน")
